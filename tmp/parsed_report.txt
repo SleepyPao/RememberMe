@@ -1,0 +1,46 @@
+raw_lines=2422
+entries=2356
+unparsed=42
+--- sample unparsed ---
+interest rate 利率
+tear n/v. 眼泪/撕开
+whole adj/n. 完整的/全部
+back door 后门
+book keeping 记账
+2022雅思听力拼写词汇--增补
+bus stop 公交站
+central heating 中央供暖
+chief executive 行政主管
+chocolate bar 巧克力块
+conference call 电话会议
+driver's license 驾照
+dust bag 集尘袋
+employee first 员工优先
+energy saving 省电的
+fancy dress 化装舞会服装
+fishing boat 渔船
+global warming 全球变暖
+ground plan 平面图
+hospitality industry 服务业
+internal clock 生物钟
+jet engine 喷气式发动机
+lateral line (鱼及两栖类的)侧线(感官)
+live music 现场音乐
+North Africa 北非
+post office 邮局 postoffice邮局
+red blood cell 红细胞
+rest area 休息区
+side gate 侧门
+sleeping bag 睡袋
+sloping site 斜面地基
+space station 空间站
+splash ride 滑水道
+still water 死水
+student card 学生卡
+sun cream 防晒霜
+swimming pool 游泳池
+switch off 关掉
+tape measurer 卷尺
+town hall 市政厅
+trade journal 行业刊物
+unsocial hour 非正常工作时间
