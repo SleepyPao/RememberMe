@@ -1,50 +1,141 @@
-﻿# WordDuo
+﻿# 词光 Ciguang
 
-偏多邻国风格的 Android 背词应用，重点强化听写、发音和错词回顾。
+词光是一款面向英语词汇学习的 Android 应用，核心目标是帮助用户完成单词背诵、拼写训练、发音检查和错词复习。
 
-## 已实现功能
+本项目使用 Kotlin + Jetpack Compose 开发，界面风格参考多邻国并做了更柔和的奶油白卡片化设计，适合作为课程项目演示与提交。
 
-- 背诵模式
-- 发音检查
-- 释义回忆
-- 拼写挑战
-- 错词复习
-- 今日目标 / XP / 连续学习天数
-- 本地词库搜索
-- 本地离线进度保存
-- 正式雅思听力拼写词库（已由 PDF 转换导入）
+## Core Features
 
-## 技术栈
+- 背诵模式：看词记义，建立初始印象
+- 发音检查：播放标准音，跟读并检查发音结果
+- 释义回忆：根据中文释义回忆英文单词
+- 拼写挑战：播放单词发音并完成拼写
+- 错词复习：自动聚合高频错误词
+- 登录注册：本地账号注册与登录
+- 学习统计：每日目标、XP、连胜天数、本地进度保存
+- 词库搜索：支持按英文或中文释义检索
+- 正式题库导入：已将课程提供的 PDF 词库转换并导入应用
+
+## Tech Stack
 
 - Kotlin
 - Jetpack Compose
 - Navigation Compose
 - SharedPreferences
-- TextToSpeech
-- SpeechRecognizer
+- Android TextToSpeech
+- Android SpeechRecognizer
 
-## 使用方式
+## Environment
 
-1. 用 Android Studio 打开 `e:/INT4074`
-2. 首次 Sync 下载 Gradle 与依赖
-3. 运行到 Android 8.0+ 设备或模拟器
+- Android Studio Hedgehog 或更高版本
+- JDK 17
+- Gradle Wrapper: 8.10.2
+- minSdk 26
+- targetSdk 35
 
-## 题库导入
+## How To Run
 
-当前已经将 `听力拼写词汇.pdf` 转换为正式词库，并写入 `app/src/main/assets/words.json`。
+1. Clone or download this repository.
+2. Open [e:/INT4074](e:/INT4074) in Android Studio.
+3. Make sure the Gradle JDK is set to JDK 17.
+4. Sync the project.
+5. Run on an Android 8.0+ device or emulator.
 
-当前词库字段结构如下：
+## Build APK
+
+You can build the debug APK with:
+
+```powershell
+cd e:\INT4074
+.\gradlew.bat assembleDebug
+```
+
+After build, the APK will be under:
+
+```text
+app/build/outputs/apk/debug/app-debug.apk
+```
+
+## Repository Structure
+
+```text
+app/src/main/java/com/int4074/wordduo/
+  MainActivity.kt
+  data/
+    Models.kt
+    StudyRepository.kt
+  ui/
+    AppViewModel.kt
+    AuthScreen.kt
+    LibrarySettingsScreens.kt
+    PracticeScreens.kt
+    SpeechTools.kt
+    UiChrome.kt
+    WordDuoApp.kt
+    theme/Theme.kt
+app/src/main/assets/
+  words.json
+```
+
+## Word Bank Source
+
+The formal word bank has been converted from the provided PDF vocabulary list and imported into:
+
+```text
+app/src/main/assets/words.json
+```
+
+Current word bank size:
+
+- 2397 entries
+
+Word fields:
 
 ```json
 {
-  "id": "abandon",
-  "word": "abandon",
+  "id": "ability",
+  "word": "ability",
   "phonetic": "",
-  "meaning": "缺席",
+  "meaning": "能力",
   "example": "",
   "level": "IELTS",
   "tags": ["听写", "名词"]
 }
 ```
 
+Note:
 
+- The original PDF source mainly provides word, part of speech and meaning.
+- Many entries do not include phonetic symbols or example sentences.
+- The app therefore uses conditional display and generated fallback examples in some learning screens.
+
+## Speech Feature Notes
+
+- 发音检查需要麦克风权限。
+- 设备需要系统语音识别服务才能使用跟读检查。
+- 设备需要可用的英文 TTS 引擎才能播放标准音。
+- 模拟器语音能力可能不完整，演示时建议优先使用真机。
+
+## Source Code Download
+
+Teachers can obtain the source code by either:
+
+1. Downloading the ZIP directly from GitHub
+2. Cloning the repository:
+
+```bash
+git clone https://github.com/SleepyPao/RememberMe.git
+```
+
+## Submission Notes
+
+This repository contains the Android Studio source project for the coursework submission. The app name shown on device is:
+
+- 词光
+
+If needed for assessment, this repository can be provided together with:
+
+- APK file
+- presentation slides
+- demo video
+- source code link
