@@ -1,0 +1,27 @@
+﻿# Android / Gradle
+.gradle/
+**/build/
+**/captures/
+.externalNativeBuild/
+.cxx/
+
+# IDE
+.idea/
+*.iml
+.kotlinc/
+.kotlin/
+
+# Local config
+local.properties
+keystore.properties
+*.jks
+*.keystore
+
+# OS / logs
+.DS_Store
+Thumbs.db
+*.log
+
+# Temp / generated
+.tmp/
+tmp/
