@@ -17,7 +17,6 @@
 - 学习统计：每日目标、XP、连胜天数、本地进度保存
 - 个人页 Profile：头像上传、目标设置、词库与错词本二级入口
 - 词库搜索：支持按英文或中文释义检索
-- 正式题库导入：已将课程提供的 PDF 词库转换并导入应用
 
 ## Tech Stack
 
@@ -150,3 +149,4 @@ Suggested submission package:
 - Demo video
 - Source code link
 - Collaboration and peer evaluation tables
+
