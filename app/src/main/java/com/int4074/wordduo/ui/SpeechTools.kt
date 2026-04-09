@@ -87,7 +87,6 @@ class AndroidRecognizerHandle(
             override fun onError(error: Int) {
                 onListeningChanged(false)
                 onErrorMessage(errorMessage(error))
-                onRecognized("")
             }
 
             override fun onResults(results: Bundle?) {
@@ -103,8 +102,10 @@ class AndroidRecognizerHandle(
     override fun start(): Boolean {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.US.toLanguageTag())
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag())
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, Locale.ENGLISH.toLanguageTag())
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
         }
         return runCatching {
             recognizer.startListening(intent)

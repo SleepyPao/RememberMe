@@ -1,24 +1,40 @@
 ﻿package com.int4074.wordduo.ui
 
+import android.content.Context
+import android.net.Uri
+import android.widget.ImageView
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
@@ -33,23 +49,35 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.int4074.wordduo.data.LibraryState
 import com.int4074.wordduo.data.UserStats
 import com.int4074.wordduo.data.WordEntry
 import com.int4074.wordduo.data.WordProgress
+import java.io.File
 
 @Composable
-fun MistakesScreen(library: LibraryState, onReview: () -> Unit) {
+fun MistakesScreen(library: LibraryState, onReview: () -> Unit, onBack: () -> Unit) {
     DuolingoBackdrop {
         LazyColumn(
-            modifier = Modifier.fillMaxSize().statusBarsPadding(),
+            modifier = Modifier.fillMaxSize().statusBarsPadding().displayCutoutPadding(),
             contentPadding = PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            item {
+                FilledTonalButton(onClick = onBack, shape = RoundedCornerShape(18.dp)) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    Spacer(Modifier.size(8.dp))
+                    Text("返回我的")
+                }
+            }
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -88,17 +116,24 @@ fun MistakesScreen(library: LibraryState, onReview: () -> Unit) {
 }
 
 @Composable
-fun LibraryScreen(library: LibraryState) {
+fun LibraryScreen(library: LibraryState, onBack: () -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
     val filtered = remember(library.words, query) {
         library.words.filter { it.word.contains(query, true) || it.meaning.contains(query, true) }
     }
     DuolingoBackdrop {
         LazyColumn(
-            modifier = Modifier.fillMaxSize().statusBarsPadding(),
+            modifier = Modifier.fillMaxSize().statusBarsPadding().displayCutoutPadding(),
             contentPadding = PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            item {
+                FilledTonalButton(onClick = onBack, shape = RoundedCornerShape(18.dp)) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    Spacer(Modifier.size(8.dp))
+                    Text("返回我的")
+                }
+            }
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("词库", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Color(0xFF2D241E))
@@ -141,26 +176,97 @@ fun LibraryScreen(library: LibraryState) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(stats: UserStats, onGoalChanged: (Int) -> Unit, onLogout: () -> Unit, currentUser: String) {
-    var goalText by rememberSaveable { mutableStateOf(stats.dailyGoal.toString()) }
+fun ProfileScreen(
+    stats: UserStats,
+    onGoalChanged: (Int) -> Unit,
+    onLogout: () -> Unit,
+    currentUser: String,
+    avatarUri: String,
+    onAvatarSelected: (String) -> Unit,
+    onOpenMistakes: () -> Unit,
+    onOpenLibrary: () -> Unit,
+    onBackHome: () -> Unit
+) {
+    var goalText by rememberSaveable(stats.dailyGoal) { mutableStateOf(stats.dailyGoal.toString()) }
+    val context = LocalContext.current
+    val profileName = currentUser.ifBlank { "WordLight User" }
+    val profileInitial = profileName.firstOrNull()?.uppercaseChar()?.toString() ?: "词"
+    val avatarPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            val savedAvatarUri = copyAvatarToInternalStorage(context, uri)
+            if (savedAvatarUri != null) {
+                onAvatarSelected(savedAvatarUri)
+            }
+        }
+    }
+
     DuolingoBackdrop {
         LazyColumn(
-            modifier = Modifier.fillMaxSize().statusBarsPadding(),
+            modifier = Modifier.fillMaxSize().statusBarsPadding().displayCutoutPadding(),
             contentPadding = PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                TopAppBar(title = { Text("设置", color = Color(0xFF2D241E), fontWeight = FontWeight.Bold) })
+                FilledTonalButton(onClick = onBackHome, shape = RoundedCornerShape(18.dp)) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    Spacer(Modifier.size(8.dp))
+                    Text("返回首页")
+                }
+            }
+            item {
+                TopAppBar(title = { Text("我的", color = Color(0xFF2D241E), fontWeight = FontWeight.Bold) })
             }
             item {
                 FloatingCard {
-                    Text("账号", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2D241E))
-                    Text(currentUser.ifBlank { "未登录" }, color = Color(0xFF8F8378))
-                    Button(
-                        onClick = onLogout,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9B83)),
-                        shape = RoundedCornerShape(20.dp)
-                    ) { Text("退出登录") }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        ProfileAvatar(
+                            avatarUri = avatarUri,
+                            profileInitial = profileInitial,
+                            onClick = { avatarPicker.launch("image/*") }
+                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(profileName, fontSize = 24.sp, fontWeight = FontWeight.Black, color = Color(0xFF2D241E))
+                            Text("本地学习档案", color = Color(0xFF8F8378), fontWeight = FontWeight.SemiBold)
+                            Text("点击头像即可选择新的头像，选中的图片会复制到应用本地，不会再卡在文档页面。", color = Color(0xFF9A8D83))
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TinyStatChip("XP ${stats.xp}", Color(0xFFFFC25F))
+                        TinyStatChip("连胜 ${stats.streakDays}天", Color(0xFFFFB6A1))
+                        TinyStatChip("今日 ${stats.studiedToday}/${stats.dailyGoal}", Color(0xFF9AD9B0))
+                    }
+                }
+            }
+            item {
+                FloatingCard {
+                    Text("快捷入口", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2D241E))
+                    Text("错词复习和词库查询改成二级入口，底栏不会再把个人页挤掉。", color = Color(0xFF8F8378))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(
+                            onClick = onOpenMistakes,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA399))
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null)
+                            Spacer(Modifier.size(8.dp))
+                            Text("错词本")
+                        }
+                        Button(
+                            onClick = onOpenLibrary,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC46A))
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.LibraryBooks, contentDescription = null)
+                            Spacer(Modifier.size(8.dp))
+                            Text("词库")
+                        }
+                    }
                 }
             }
             item {
@@ -180,8 +286,13 @@ fun SettingsScreen(stats: UserStats, onGoalChanged: (Int) -> Unit, onLogout: () 
                             unfocusedTextColor = Color(0xFF2D241E)
                         )
                     )
+                    Text("当前已保存：${stats.dailyGoal}", color = Color(0xFF8F8378))
                     Button(
-                        onClick = { onGoalChanged(goalText.toIntOrNull() ?: stats.dailyGoal) },
+                        onClick = {
+                            val nextGoal = (goalText.toIntOrNull() ?: stats.dailyGoal).coerceIn(1, 200)
+                            goalText = nextGoal.toString()
+                            onGoalChanged(nextGoal)
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9A8CFF)),
                         shape = RoundedCornerShape(20.dp)
                     ) { Text("保存目标") }
@@ -189,14 +300,85 @@ fun SettingsScreen(stats: UserStats, onGoalChanged: (Int) -> Unit, onLogout: () 
             }
             item {
                 FloatingCard {
-                    Text("说明", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2D241E))
+                    Text("说明与账户", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2D241E))
                     Text("1. 发音检查需要麦克风权限、系统语音识别服务和可用的英文语音引擎。", color = Color(0xFF8F8378))
-                    Text("2. 模拟器的语音功能可能不完整，演示时建议优先使用真机。", color = Color(0xFF8F8378))
-                    Text("3. 正式词库已从题库 PDF 导入，错词本会随错误次数自动更新。", color = Color(0xFF8F8378))
+                    Text("2. 头像会从系统图片选择器导入，并复制到应用本地，重启后仍会保留。", color = Color(0xFF8F8378))
+                    Text("3. 每日目标支持 1-200，自定义较大的目标后会立即保存。", color = Color(0xFF8F8378))
+                    Text("4. 正式词库已从题库 PDF 导入，错词本会随错误次数自动更新。", color = Color(0xFF8F8378))
+                    Button(
+                        onClick = onLogout,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9B83)),
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
+                        Icon(Icons.Default.Settings, contentDescription = null)
+                        Spacer(Modifier.size(8.dp))
+                        Text("退出登录")
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun ProfileAvatar(avatarUri: String, profileInitial: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(84.dp)
+            .clip(CircleShape)
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(
+                        Color.White,
+                        Color(0x339DB2FF),
+                        Color(0x669A8CFF)
+                    )
+                )
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        if (avatarUri.isNotBlank()) {
+            AndroidView(
+                factory = { context ->
+                    ImageView(context).apply {
+                        scaleType = ImageView.ScaleType.CENTER_CROP
+                    }
+                },
+                modifier = Modifier.fillMaxSize(),
+                update = { imageView ->
+                    imageView.setImageURI(Uri.parse(avatarUri))
+                }
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = null,
+                tint = Color(0xFF5D68D8),
+                modifier = Modifier.size(32.dp)
+            )
+            Text(
+                text = profileInitial,
+                color = Color(0xFF2D241E),
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 22.sp,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp)
+            )
+        }
+    }
+}
+
+private fun copyAvatarToInternalStorage(context: Context, uri: Uri): String? {
+    return runCatching {
+        val avatarFile = File(context.filesDir, "profile_avatar.jpg")
+        context.contentResolver.openInputStream(uri).use { input ->
+            requireNotNull(input) { "avatar input stream is null" }
+            avatarFile.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        }
+        Uri.fromFile(avatarFile).toString()
+    }.getOrNull()
 }
 
 @Composable
@@ -230,4 +412,9 @@ private fun WordRow(word: WordEntry, progress: WordProgress?) {
         }
     }
 }
+
+
+
+
+
 

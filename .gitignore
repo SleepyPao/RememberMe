@@ -25,3 +25,8 @@ Thumbs.db
 # Temp / generated
 .tmp/
 tmp/
+
+# Local app assets
+output/
+app/google-services.json
+

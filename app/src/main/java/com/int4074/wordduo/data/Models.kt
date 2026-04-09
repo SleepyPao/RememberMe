@@ -30,6 +30,7 @@ data class UserStats(
 data class AuthState(
     val isLoggedIn: Boolean = false,
     val currentUser: String = "",
+    val avatarUri: String = "",
     val lastAccount: String = "",
     val authMessage: String? = null
 )
@@ -65,6 +66,71 @@ data class SessionState(
     val current: PracticeQuestion? get() = queue.getOrNull(index)
 }
 
+enum class BattleMode {
+    Lan,
+    Ai
+}
+
+enum class BattlePhase {
+    Idle,
+    Waiting,
+    Playing,
+    RoundReview,
+    Finished
+}
+
+data class BattlePlayerState(
+    val id: String,
+    val name: String,
+    val correctCount: Int = 0,
+    val totalDurationMs: Long = 0L,
+    val joined: Boolean = true
+)
+
+data class BattleState(
+    val mode: BattleMode = BattleMode.Lan,
+    val phase: BattlePhase = BattlePhase.Idle,
+    val roomCode: String = "",
+    val joinCodeInput: String = "",
+    val localAddress: String = "",
+    val localPlayerId: String = "",
+    val players: List<BattlePlayerState> = emptyList(),
+    val roundIndex: Int = 0,
+    val totalRounds: Int = 5,
+    val currentWord: WordEntry? = null,
+    val answerInput: String = "",
+    val submitted: Boolean = false,
+    val feedback: String? = null,
+    val statusMessage: String? = null,
+    val isHost: Boolean = false,
+    val winnerLabel: String = "",
+    val turnStartedAtMs: Long = 0L
+)
+
+data class EssayIssue(
+    val excerpt: String,
+    val category: String,
+    val diagnosis: String,
+    val suggestion: String
+)
+
+data class EssayReviewResult(
+    val score: Int = 0,
+    val wordCount: Int = 0,
+    val sentenceCount: Int = 0,
+    val summary: String = "",
+    val issues: List<EssayIssue> = emptyList(),
+    val improvedText: String = ""
+)
+
+data class EssayReviewState(
+    val inputText: String = "",
+    val imageSourceLabel: String = "",
+    val statusMessage: String? = null,
+    val result: EssayReviewResult? = null,
+    val isAnalyzing: Boolean = false
+)
+
 data class LibraryState(
     val words: List<WordEntry> = emptyList(),
     val progress: Map<String, WordProgress> = emptyMap(),
@@ -73,3 +139,5 @@ data class LibraryState(
     val weakWords: List<WordEntry>
         get() = words.filter { progress[it.id]?.isWeak == true }
 }
+
+

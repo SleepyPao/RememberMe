@@ -3,24 +3,132 @@
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.int4074.wordduo.data.BattleRepository
+import com.int4074.wordduo.data.BattleState
+import com.int4074.wordduo.data.EssayReviewState
 import com.int4074.wordduo.data.PracticeMode
 import com.int4074.wordduo.data.SessionState
 import com.int4074.wordduo.data.StudyRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 import kotlin.math.max
 
-class AppViewModel(private val repository: StudyRepository) : ViewModel() {
+class AppViewModel(
+    private val repository: StudyRepository,
+    private val battleRepository: BattleRepository
+) : ViewModel() {
     val library = repository.state
     val authState = repository.authState
+    val battle: StateFlow<BattleState> = battleRepository.state
 
     private val _session = MutableStateFlow(SessionState())
-    val session: StateFlow<SessionState> = _session.asStateFlow()
+    val session: StateFlow<SessionState> = _session
+
+    private val _essayReview = MutableStateFlow(EssayReviewState())
+    val essayReview: StateFlow<EssayReviewState> = _essayReview
 
     fun startSession(mode: PracticeMode) {
         _session.value = repository.buildSession(mode)
+    }
+
+    fun hostLanBattle() {
+        battleRepository.hostLanRoom(authState.value.currentUser.ifBlank { "玩家 1" }, library.value.words)
+    }
+
+    fun joinLanBattle() {
+        battleRepository.joinLanRoom(authState.value.currentUser.ifBlank { "玩家 2" }, library.value.words)
+    }
+
+    fun startAiBattle() {
+        battleRepository.startAiBattle(authState.value.currentUser.ifBlank { "我" }, library.value.words)
+    }
+
+    fun updateBattleJoinCode(code: String) {
+        battleRepository.updateJoinCode(code)
+    }
+
+    fun updateBattleInput(text: String) {
+        battleRepository.updateAnswerInput(text)
+    }
+
+    fun submitBattleAnswer() {
+        battleRepository.submitAnswer()
+    }
+
+    fun leaveBattle() {
+        battleRepository.disconnect()
+    }
+
+    fun updateEssayText(text: String) {
+        _essayReview.value = _essayReview.value.copy(
+            inputText = text,
+            statusMessage = null,
+            result = if (text != _essayReview.value.inputText) null else _essayReview.value.result,
+            isAnalyzing = false
+        )
+    }
+
+    fun importEssayText(text: String, sourceLabel: String) {
+        _essayReview.value = _essayReview.value.copy(
+            inputText = text,
+            imageSourceLabel = sourceLabel,
+            statusMessage = if (text.isBlank()) "图片里没有识别到有效文字" else "已从图片导入 ${text.length} 个字符",
+            result = null,
+            isAnalyzing = false
+        )
+    }
+
+    fun setEssayStatus(message: String?) {
+        _essayReview.value = _essayReview.value.copy(statusMessage = message, isAnalyzing = false)
+    }
+
+    fun clearEssayReview() {
+        _essayReview.value = EssayReviewState()
+    }
+
+    fun analyzeEssay() {
+        val text = _essayReview.value.inputText.trim()
+        if (text.isBlank()) {
+            _essayReview.value = _essayReview.value.copy(statusMessage = "请先输入文章或导入图片文字")
+            return
+        }
+
+        _essayReview.value = _essayReview.value.copy(
+            statusMessage = "正在调用 AI 评分，请稍候…",
+            result = null,
+            isAnalyzing = true
+        )
+
+        viewModelScope.launch {
+            val outcome = withContext(Dispatchers.IO) {
+                runCatching {
+                    Triple(AiEssayService.review(text), false, null as String?)
+                }.getOrElse { error ->
+                    Triple(EssayReviewEngine.review(text), true, error.message ?: error.javaClass.simpleName)
+                }
+            }
+
+            val (result, usedFallback, errorMessage) = outcome
+            _essayReview.value = _essayReview.value.copy(
+                result = result,
+                statusMessage = if (usedFallback) {
+                    val detail = errorMessage?.replace("\n", " ")?.take(180).orEmpty()
+                    if (detail.isBlank()) {
+                        "AI 接口暂时不可用，已切换为本地评估，共发现 ${result.issues.size} 处可优化点"
+                    } else {
+                        "AI 接口暂时不可用：$detail。已切换为本地评估，共发现 ${result.issues.size} 处可优化点"
+                    }
+                } else {
+                    "AI 评估已完成，共发现 ${result.issues.size} 处可优化点"
+                },
+                isAnalyzing = false
+            )
+        }
     }
 
     fun login(account: String, password: String) {
@@ -31,9 +139,15 @@ class AppViewModel(private val repository: StudyRepository) : ViewModel() {
         repository.register(account, password, confirmPassword)
     }
 
+    fun updateAvatar(uri: String) {
+        repository.updateAvatarUri(uri)
+    }
+
     fun logout() {
         repository.logout()
+        battleRepository.disconnect()
         _session.value = SessionState()
+        _essayReview.value = EssayReviewState()
     }
 
     fun clearAuthMessage() {
@@ -128,7 +242,10 @@ class AppViewModel(private val repository: StudyRepository) : ViewModel() {
         fun factory(context: Context): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 @Suppress("UNCHECKED_CAST")
-                return AppViewModel(StudyRepository(context.applicationContext)) as T
+                return AppViewModel(
+                    StudyRepository(context.applicationContext),
+                    BattleRepository(context.applicationContext)
+                ) as T
             }
         }
 
@@ -156,3 +273,5 @@ class AppViewModel(private val repository: StudyRepository) : ViewModel() {
         }
     }
 }
+
+

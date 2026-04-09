@@ -39,11 +39,12 @@ class StudyRepository(context: Context) {
     fun login(account: String, password: String) {
         val savedAccount = prefs.getString("auth_account", "").orEmpty()
         val savedPassword = prefs.getString("auth_password", "").orEmpty()
+        val avatarUri = prefs.getString("auth_avatar_uri", "").orEmpty()
         _authState.value = when {
             account.isBlank() || password.isBlank() -> AuthState(lastAccount = account, authMessage = "请输入账号和密码")
             account == savedAccount && password == savedPassword -> {
                 prefs.edit().putBoolean("auth_logged_in", true).apply()
-                AuthState(isLoggedIn = true, currentUser = account, lastAccount = account)
+                AuthState(isLoggedIn = true, currentUser = account, avatarUri = avatarUri, lastAccount = account)
             }
             else -> AuthState(lastAccount = account, authMessage = "账号或密码错误")
         }
@@ -65,9 +66,14 @@ class StudyRepository(context: Context) {
         }
     }
 
+    fun updateAvatarUri(uri: String) {
+        prefs.edit().putString("auth_avatar_uri", uri).apply()
+        _authState.value = _authState.value.copy(avatarUri = uri)
+    }
+
     fun logout() {
         prefs.edit().putBoolean("auth_logged_in", false).apply()
-        _authState.value = AuthState(lastAccount = _authState.value.currentUser)
+        _authState.value = AuthState(lastAccount = _authState.value.currentUser, avatarUri = _authState.value.avatarUri)
     }
 
     fun clearAuthMessage() {
@@ -107,7 +113,7 @@ class StudyRepository(context: Context) {
     }
 
     fun updateDailyGoal(goal: Int) {
-        val next = _state.value.copy(stats = _state.value.stats.copy(dailyGoal = goal.coerceIn(5, 50)))
+        val next = _state.value.copy(stats = _state.value.stats.copy(dailyGoal = goal.coerceIn(1, 200)))
         save(next)
         _state.value = next
     }
@@ -149,10 +155,12 @@ class StudyRepository(context: Context) {
 
     private fun loadAuthState(): AuthState {
         val account = prefs.getString("auth_account", "").orEmpty()
+        val avatarUri = prefs.getString("auth_avatar_uri", "").orEmpty()
         val loggedIn = prefs.getBoolean("auth_logged_in", false)
         return AuthState(
             isLoggedIn = loggedIn && account.isNotBlank(),
             currentUser = if (loggedIn) account else "",
+            avatarUri = avatarUri,
             lastAccount = account
         )
     }

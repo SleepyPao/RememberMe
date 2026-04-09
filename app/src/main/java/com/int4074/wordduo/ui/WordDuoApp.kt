@@ -11,12 +11,11 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.automirrored.filled.LibraryBooks
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Icon
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -49,6 +48,8 @@ fun WordDuoApp() {
     val library by vm.library.collectAsStateWithLifecycle()
     val authState by vm.authState.collectAsStateWithLifecycle()
     val session by vm.session.collectAsStateWithLifecycle()
+    val battle by vm.battle.collectAsStateWithLifecycle()
+    val essayReview by vm.essayReview.collectAsStateWithLifecycle()
     val navController = rememberNavController()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -63,6 +64,9 @@ fun WordDuoApp() {
 
     LaunchedEffect(session.feedback) {
         session.feedback?.let { snackbarHostState.showSnackbar(it) }
+    }
+    LaunchedEffect(battle.statusMessage) {
+        battle.statusMessage?.let { snackbarHostState.showSnackbar(it) }
     }
 
     Scaffold(
@@ -88,10 +92,13 @@ fun WordDuoApp() {
             modifier = Modifier.padding(padding)
         ) {
             composable("home") {
-                HomeScreen(library = library) {
-                    vm.startSession(it)
-                    navController.navigate("practice")
-                }
+                HomeScreen(
+                    library = library,
+                    onStartMode = {
+                        vm.startSession(it)
+                        navController.navigate("practice")
+                    }
+                )
             }
             composable("practice") {
                 PracticeScreen(
@@ -113,21 +120,82 @@ fun WordDuoApp() {
                     }
                 )
             }
+            composable("duel") {
+                OnlineBattleScreen(
+                    battle = battle,
+                    onHostLan = vm::hostLanBattle,
+                    onJoinCodeChange = vm::updateBattleJoinCode,
+                    onJoinLan = vm::joinLanBattle,
+                    onStartAi = vm::startAiBattle,
+                    onInputChange = vm::updateBattleInput,
+                    onSubmitAnswer = vm::submitBattleAnswer,
+                    onLeave = {
+                        vm.leaveBattle()
+                        navController.navigate("home") {
+                            popUpTo("home") { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            composable("essay-review") {
+                EssayReviewScreen(
+                    essayState = essayReview,
+                    onTextChange = vm::updateEssayText,
+                    onAnalyze = vm::analyzeEssay,
+                    onClear = vm::clearEssayReview,
+                    onImportText = vm::importEssayText,
+                    onStatus = vm::setEssayStatus,
+                    onBackHome = {
+                        navController.navigate("home") {
+                            popUpTo("home") { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
             composable("mistakes") {
-                MistakesScreen(library = library) {
-                    vm.startSession(PracticeMode.MistakeReview)
-                    navController.navigate("practice")
-                }
+                MistakesScreen(
+                    library = library,
+                    onReview = {
+                        vm.startSession(PracticeMode.MistakeReview)
+                        navController.navigate("practice")
+                    },
+                    onBack = {
+                        navController.navigate("profile") {
+                            popUpTo("profile") { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    }
+                )
             }
             composable("library") {
-                LibraryScreen(library = library)
+                LibraryScreen(
+                    library = library,
+                    onBack = {
+                        navController.navigate("profile") {
+                            popUpTo("profile") { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    }
+                )
             }
-            composable("settings") {
-                SettingsScreen(
+            composable("profile") {
+                ProfileScreen(
                     stats = library.stats,
                     onGoalChanged = vm::updateGoal,
                     onLogout = vm::logout,
-                    currentUser = authState.currentUser
+                    currentUser = authState.currentUser,
+                    avatarUri = authState.avatarUri,
+                    onAvatarSelected = vm::updateAvatar,
+                    onOpenMistakes = { navController.navigate("mistakes") },
+                    onOpenLibrary = { navController.navigate("library") },
+                    onBackHome = {
+                        navController.navigate("home") {
+                            popUpTo("home") { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    }
                 )
             }
         }
@@ -144,9 +212,9 @@ private data class NavItem(
 private val navItems = listOf(
     NavItem("home", "首页", Icons.Default.Home, Color(0xFF978BFF)),
     NavItem("practice", "练习", Icons.Default.Headphones, Color(0xFFFF8D72)),
-    NavItem("mistakes", "错词", Icons.Default.Warning, Color(0xFFFF8B86)),
-    NavItem("library", "词库", Icons.AutoMirrored.Filled.LibraryBooks, Color(0xFFFFC46A)),
-    NavItem("settings", "设置", Icons.Default.Settings, Color(0xFF9DB2FF))
+    NavItem("duel", "对战", Icons.Default.Groups, Color(0xFFFF9E7A)),
+    NavItem("essay-review", "AI检测", Icons.Default.AutoAwesome, Color(0xFF8F86FF)),
+    NavItem("profile", "我的", Icons.Default.Person, Color(0xFF9DB2FF))
 )
 
 @Composable
@@ -155,7 +223,7 @@ private fun BottomNavBar(route: String?, onNavigate: (String) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
         Surface(
             color = Color(0xFFFDF7EF),
@@ -166,17 +234,20 @@ private fun BottomNavBar(route: String?, onNavigate: (String) -> Unit) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .padding(horizontal = 8.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 navItems.forEach { item ->
-                    val selected = route == item.route
+                    val selected = when (item.route) {
+                        "profile" -> route == "profile" || route == "mistakes" || route == "library"
+                        else -> route == item.route
+                    }
                     Column(
                         modifier = Modifier
                             .weight(1f)
                             .clickable { onNavigate(item.route) }
-                            .padding(vertical = 4.dp),
+                            .padding(horizontal = 2.dp, vertical = 4.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
@@ -184,11 +255,11 @@ private fun BottomNavBar(route: String?, onNavigate: (String) -> Unit) {
                             icon = item.icon,
                             accent = item.accent,
                             selected = selected,
-                            size = if (selected) 54.dp else 46.dp
+                            size = if (selected) 50.dp else 42.dp
                         )
                         Text(
                             text = item.label,
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                             color = if (selected) item.accent else Color(0xFF968A80)
                         )
@@ -198,4 +269,6 @@ private fun BottomNavBar(route: String?, onNavigate: (String) -> Unit) {
         }
     }
 }
+
+
 

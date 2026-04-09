@@ -19,14 +19,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Mic
@@ -68,7 +71,7 @@ fun HomeScreen(library: LibraryState, onStartMode: (PracticeMode) -> Unit) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding(),
+                .statusBarsPadding().displayCutoutPadding(),
             contentPadding = PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
@@ -127,7 +130,7 @@ fun PracticeScreen(
     DuolingoBackdrop {
         if (session.queue.isEmpty()) {
             LazyColumn(
-                modifier = Modifier.fillMaxSize().statusBarsPadding(),
+                modifier = Modifier.fillMaxSize().statusBarsPadding().displayCutoutPadding(),
                 contentPadding = PaddingValues(20.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
@@ -150,7 +153,7 @@ fun PracticeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
+                .statusBarsPadding().displayCutoutPadding()
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
@@ -342,8 +345,12 @@ private fun PronunciationActions(
         enabled = recognitionAvailable,
         onRecognized = {
             listening = false
-            speechStatus = if (it.isBlank()) "未识别到语音，请再试一次" else null
-            onRecognized(it)
+            if (it.isNotBlank()) {
+                speechStatus = null
+                onRecognized(it)
+            } else {
+                speechStatus = "未识别到语音，请再试一次"
+            }
         },
         onListeningChanged = { listening = it },
         onErrorMessage = {
@@ -405,7 +412,7 @@ private fun PronunciationActions(
             FloatingCard(modifier = Modifier.fillMaxWidth()) {
                 Text("语音提示", color = Color(0xFF2D241E), fontWeight = FontWeight.Bold)
                 Text(it, color = Color(0xFFFF8D72))
-                Text("模拟器常缺少系统 TTS 或识别服务，演示时建议优先使用真机。", color = Color(0xFF8F8378))
+                Text("请使用正常语速读出英文单词；部分国产系统需要先启用系统语音识别服务。", color = Color(0xFF8F8378))
             }
         }
         Button(
@@ -447,4 +454,9 @@ fun CompletionPane(session: SessionState, onNextBatch: () -> Unit, onBackHome: (
         }
     }
 }
+
+
+
+
+
 
