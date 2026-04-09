@@ -136,17 +136,3 @@ Teachers can obtain the source code by either:
 git clone https://github.com/SleepyPao/RememberMe.git
 ```
 
-## Submission Notes
-
-This repository contains the Android Studio source project for the coursework submission. The app name shown on device is:
-
-- 词光
-
-Suggested submission package:
-
-- APK file
-- Presentation slides (PDF / PPTX)
-- Demo video
-- Source code link
-- Collaboration and peer evaluation tables
-
