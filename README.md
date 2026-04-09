@@ -1,8 +1,8 @@
 ﻿# 词光 Ciguang
 
-词光是一款面向英语词汇学习的 Android 应用，核心目标是帮助用户完成单词背诵、拼写训练、发音检查和错词复习。
+词光是一款面向英语词汇学习的 Android 应用，核心目标是帮助用户完成单词背诵、拼写训练、发音检查、错词复习与写作检测。
 
-本项目使用 Kotlin + Jetpack Compose 开发，界面风格参考多邻国并做了更柔和的奶油白卡片化设计，适合作为课程项目演示与提交。
+本项目使用 Kotlin + Jetpack Compose 开发，界面采用奶油白卡片化风格，适合作为课程项目演示与提交。
 
 ## Core Features
 
@@ -11,8 +11,11 @@
 - 释义回忆：根据中文释义回忆英文单词
 - 拼写挑战：播放单词发音并完成拼写
 - 错词复习：自动聚合高频错误词
+- 对战模式：支持局域网双机对战与人机拼写对战
+- AI 写作检测：支持粘贴作文或导入图片 OCR，再进行评分与纠错
 - 登录注册：本地账号注册与登录
 - 学习统计：每日目标、XP、连胜天数、本地进度保存
+- 个人页 Profile：头像上传、目标设置、词库与错词本二级入口
 - 词库搜索：支持按英文或中文释义检索
 - 正式题库导入：已将课程提供的 PDF 词库转换并导入应用
 
@@ -24,6 +27,9 @@
 - SharedPreferences
 - Android TextToSpeech
 - Android SpeechRecognizer
+- ML Kit Text Recognition
+- Local socket-based LAN battle
+- OpenAI-compatible AI API integration
 
 ## Environment
 
@@ -62,11 +68,15 @@ app/build/outputs/apk/debug/app-debug.apk
 app/src/main/java/com/int4074/wordduo/
   MainActivity.kt
   data/
+    BattleRepository.kt
     Models.kt
     StudyRepository.kt
   ui/
+    AdvancedFeatureScreens.kt
+    AiEssayService.kt
     AppViewModel.kt
     AuthScreen.kt
+    EssayReviewEngine.kt
     LibrarySettingsScreens.kt
     PracticeScreens.kt
     SpeechTools.kt
@@ -109,12 +119,12 @@ Note:
 - Many entries do not include phonetic symbols or example sentences.
 - The app therefore uses conditional display and generated fallback examples in some learning screens.
 
-## Speech Feature Notes
+## Feature Notes
 
-- 发音检查需要麦克风权限。
-- 设备需要系统语音识别服务才能使用跟读检查。
-- 设备需要可用的英文 TTS 引擎才能播放标准音。
-- 模拟器语音能力可能不完整，演示时建议优先使用真机。
+- 发音检查需要麦克风权限、系统语音识别服务和可用的英文 TTS 引擎。
+- AI 写作检测支持真实 API 接入，也保留本地回退评估逻辑，用于第三方接口失败时继续演示。
+- 局域网对战需要两台设备连接同一可互访网络，演示时建议优先使用同一个手机热点。
+- 模拟器的语音能力可能不完整，发音相关功能建议优先使用真机测试。
 
 ## Source Code Download
 
@@ -133,9 +143,10 @@ This repository contains the Android Studio source project for the coursework su
 
 - 词光
 
-If needed for assessment, this repository can be provided together with:
+Suggested submission package:
 
 - APK file
-- presentation slides
-- demo video
-- source code link
+- Presentation slides (PDF / PPTX)
+- Demo video
+- Source code link
+- Collaboration and peer evaluation tables
