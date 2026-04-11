@@ -68,7 +68,8 @@ data class SessionState(
 
 enum class BattleMode {
     Lan,
-    Ai
+    Ai,
+    MeaningQuiz
 }
 
 enum class BattlePhase {
@@ -98,6 +99,7 @@ data class BattleState(
     val roundIndex: Int = 0,
     val totalRounds: Int = 5,
     val currentWord: WordEntry? = null,
+    val currentChoices: List<String> = emptyList(),
     val answerInput: String = "",
     val submitted: Boolean = false,
     val feedback: String? = null,
@@ -139,5 +141,3 @@ data class LibraryState(
     val weakWords: List<WordEntry>
         get() = words.filter { progress[it.id]?.isWeak == true }
 }
-
-

@@ -127,6 +127,7 @@ fun WordDuoApp() {
                     onJoinCodeChange = vm::updateBattleJoinCode,
                     onJoinLan = vm::joinLanBattle,
                     onStartAi = vm::startAiBattle,
+                    onStartMeaningQuiz = vm::startMeaningQuizBattle,
                     onInputChange = vm::updateBattleInput,
                     onSubmitAnswer = vm::submitBattleAnswer,
                     onLeave = {
@@ -269,6 +270,7 @@ private fun BottomNavBar(route: String?, onNavigate: (String) -> Unit) {
         }
     }
 }
+
 
 
 

@@ -14,7 +14,6 @@ import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.net.ServerSocket
 import java.net.Socket
-import java.net.SocketException
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.Executors
@@ -142,7 +141,34 @@ class BattleRepository(context: Context) {
             ),
             totalRounds = selectedWordIds.size,
             currentWord = wordsById[selectedWordIds.firstOrNull()],
-            feedback = "人机对战已开始",
+            feedback = "拼写 AI 挑战已开始",
+            turnStartedAtMs = System.currentTimeMillis()
+        )
+    }
+
+    fun startMeaningQuizBattle(playerName: String, words: List<WordEntry>, size: Int = 5) {
+        disconnect()
+        if (words.size < 4) {
+            _state.value = initialState().copy(statusMessage = "词库至少需要 4 个词，才能开始释义速选")
+            return
+        }
+        localName = playerName.ifBlank { "我" }
+        remoteName = "词光 AI"
+        wordsById = words.associateBy { it.id }
+        selectedWordIds = words.shuffled().take(size).map { it.id }
+        val firstWord = wordsById[selectedWordIds.firstOrNull()]
+        _state.value = BattleState(
+            mode = BattleMode.MeaningQuiz,
+            phase = BattlePhase.Playing,
+            localPlayerId = playerId,
+            players = listOf(
+                BattlePlayerState(playerId, localName),
+                BattlePlayerState("ai", remoteName)
+            ),
+            totalRounds = selectedWordIds.size,
+            currentWord = firstWord,
+            currentChoices = firstWord?.let { buildChoiceOptions(it) }.orEmpty(),
+            feedback = "释义速选已开始，选择最合适的英文单词",
             turnStartedAtMs = System.currentTimeMillis()
         )
     }
@@ -151,7 +177,7 @@ class BattleRepository(context: Context) {
         val state = _state.value
         val word = state.currentWord ?: return
         when (state.mode) {
-            BattleMode.Ai -> submitAiAnswer(state, word)
+            BattleMode.Ai, BattleMode.MeaningQuiz -> submitAiAnswer(state, word)
             BattleMode.Lan -> submitLanAnswer(state, word)
         }
     }
@@ -181,8 +207,16 @@ class BattleRepository(context: Context) {
         val elapsed = elapsedSinceTurn(state)
         val userCorrect = normalize(state.answerInput) == normalize(word.word)
         val botElapsed = random.nextLong(1400L, 4800L)
-        val botCorrect = random.nextFloat() > 0.32f
-        val botAnswer = if (botCorrect) word.word else mutateWord(word.word)
+        val botCorrect = when (state.mode) {
+            BattleMode.MeaningQuiz -> random.nextFloat() > 0.25f
+            else -> random.nextFloat() > 0.32f
+        }
+        val botAnswer = when (state.mode) {
+            BattleMode.MeaningQuiz -> {
+                if (botCorrect) word.word else state.currentChoices.filterNot { normalize(it) == normalize(word.word) }.randomOrNull(random) ?: word.word
+            }
+            else -> if (botCorrect) word.word else mutateWord(word.word)
+        }
         val updatedPlayers = state.players.map { player ->
             when (player.id) {
                 playerId -> player.copy(
@@ -197,11 +231,15 @@ class BattleRepository(context: Context) {
             }
         }
         val isLastRound = state.roundIndex + 1 >= state.totalRounds
+        val feedbackText = when (state.mode) {
+            BattleMode.MeaningQuiz -> "你${if (userCorrect) "选对" else "选错"}，AI 选择：$botAnswer，用时 ${String.format(Locale.US, "%.1f", botElapsed / 1000f)} 秒"
+            else -> "你${if (userCorrect) "答对" else "答错"}，AI 回答：$botAnswer，用时 ${String.format(Locale.US, "%.1f", botElapsed / 1000f)} 秒"
+        }
         _state.value = state.copy(
             players = updatedPlayers,
             phase = if (isLastRound) BattlePhase.Finished else BattlePhase.RoundReview,
             submitted = true,
-            feedback = "你${if (userCorrect) "答对" else "答错"}，AI 回答：$botAnswer，用时 ${String.format(Locale.US, "%.1f", botElapsed / 1000f)} 秒",
+            feedback = feedbackText,
             winnerLabel = if (isLastRound) winnerLabel(updatedPlayers) else "",
             turnStartedAtMs = System.currentTimeMillis()
         )
@@ -217,10 +255,12 @@ class BattleRepository(context: Context) {
             )
             return
         }
+        val nextWord = wordsById[selectedWordIds[nextRound]]
         _state.value = state.copy(
             phase = BattlePhase.Playing,
             roundIndex = nextRound,
-            currentWord = wordsById[selectedWordIds[nextRound]],
+            currentWord = nextWord,
+            currentChoices = if (state.mode == BattleMode.MeaningQuiz && nextWord != null) buildChoiceOptions(nextWord) else emptyList(),
             answerInput = "",
             submitted = false,
             feedback = "第 ${nextRound + 1} 题开始",
@@ -464,6 +504,16 @@ class BattleRepository(context: Context) {
         }
     }
 
+    private fun buildChoiceOptions(correctWord: WordEntry): List<String> {
+        val distractors = wordsById.values
+            .filterNot { it.id == correctWord.id }
+            .map { it.word }
+            .distinct()
+            .shuffled(random)
+            .take(3)
+        return (distractors + correctWord.word).shuffled(random)
+    }
+
     private fun mutateWord(word: String): String {
         if (word.length <= 3) return word.reversed()
         val dropIndex = random.nextInt(1, word.length - 1)
@@ -499,3 +549,4 @@ private fun <T> java.util.Enumeration<T>.toList(): List<T> {
     while (hasMoreElements()) result += nextElement()
     return result
 }
+

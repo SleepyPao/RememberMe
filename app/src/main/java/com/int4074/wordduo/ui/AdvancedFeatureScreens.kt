@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -35,6 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -96,12 +98,20 @@ fun OnlineBattleScreen(
     onJoinCodeChange: (String) -> Unit,
     onJoinLan: () -> Unit,
     onStartAi: () -> Unit,
+    onStartMeaningQuiz: () -> Unit,
     onInputChange: (String) -> Unit,
     onSubmitAnswer: () -> Unit,
     onLeave: () -> Unit
 ) {
     val speechPlayer = rememberSpeechPlayer()
     var playbackStatus by rememberSaveable { mutableStateOf<String?>(null) }
+    var lobbyTab by rememberSaveable { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(battle.phase, battle.joinCodeInput, battle.roomCode) {
+        if (battle.phase == BattlePhase.Idle && battle.joinCodeInput.isBlank() && battle.roomCode.isBlank()) {
+            lobbyTab = null
+        }
+    }
 
     DuolingoBackdrop {
         LazyColumn(
@@ -119,52 +129,87 @@ fun OnlineBattleScreen(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("对战模式", fontSize = 30.sp, fontWeight = FontWeight.Black, color = Color(0xFF2D241E))
-                    Text("支持局域网双机对战，也支持立即开始的人机对战。", color = Color(0xFF8F8378))
+                    Text("现在分为多人对战、拼写 AI 挑战和释义速选三种玩法。", color = Color(0xFF8F8378))
                 }
             }
             if (battle.phase == BattlePhase.Idle) {
-                item {
-                    FeatureLaunchCard(
-                        title = "局域网建房",
-                        subtitle = "房主创建房间，另一台手机输入 IP:端口 加入。",
-                        accent = Color(0xFFFF9E7A),
-                        icon = Icons.Default.Groups,
-                        buttonLabel = "创建",
-                        onClick = onHostLan
-                    )
-                }
-                item {
-                    FloatingCard {
-                        Text("加入局域网房间", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFF2D241E))
-                        Text(if (battle.localAddress.isBlank()) "请先确保两台手机连接同一个 Wi‑Fi。" else "本机当前 IP：${battle.localAddress}", color = Color(0xFF8F8378))
-                        OutlinedTextField(
-                            value = battle.joinCodeInput,
-                            onValueChange = onJoinCodeChange,
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("输入房主 IP:端口，例如 192.168.1.5:40740") },
-                            shape = RoundedCornerShape(20.dp)
+                if (lobbyTab == null) {
+                    item {
+                        FeatureLaunchCard(
+                            title = "多人对战",
+                            subtitle = "进入局域网房间页，可创建房间或加入别人的拼写对战。",
+                            accent = Color(0xFFFF9E7A),
+                            icon = Icons.Default.Groups,
+                            buttonLabel = "进入",
+                            onClick = { lobbyTab = "lan" }
                         )
-                        Button(
-                            onClick = onJoinLan,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8F86FF)),
-                            shape = RoundedCornerShape(18.dp)
-                        ) { Text("加入对战") }
                     }
-                }
-                item {
-                    FeatureLaunchCard(
-                        title = "人机对手",
-                        subtitle = "立即开始 5 题人机拼写赛，AI 会按正确率和速度与你比拼。",
-                        accent = Color(0xFF8F86FF),
-                        icon = Icons.Default.AutoAwesome,
-                        buttonLabel = "开始",
-                        onClick = onStartAi
-                    )
+                    item {
+                        FeatureLaunchCard(
+                            title = "拼写 AI 挑战",
+                            subtitle = "维持现有 5 题拼写赛，和 AI 比正确率与用时。",
+                            accent = Color(0xFF8F86FF),
+                            icon = Icons.Default.GraphicEq,
+                            buttonLabel = "开始",
+                            onClick = onStartAi
+                        )
+                    }
+                    item {
+                        FeatureLaunchCard(
+                            title = "释义速选",
+                            subtitle = "根据中文释义在四个英文选项里快速作答，同样按正确率和速度结算。",
+                            accent = Color(0xFF7EC8A5),
+                            icon = Icons.AutoMirrored.Filled.MenuBook,
+                            buttonLabel = "开始",
+                            onClick = onStartMeaningQuiz
+                        )
+                    }
+                } else {
+                    item {
+                        FilledTonalButton(onClick = { lobbyTab = null }, shape = RoundedCornerShape(18.dp)) {
+                            Text("返回模式列表")
+                        }
+                    }
+                    item {
+                        FeatureLaunchCard(
+                            title = "局域网建房",
+                            subtitle = "房主创建房间，另一台手机输入 IP:端口 加入。",
+                            accent = Color(0xFFFF9E7A),
+                            icon = Icons.Default.Groups,
+                            buttonLabel = "创建",
+                            onClick = onHostLan
+                        )
+                    }
+                    item {
+                        FloatingCard {
+                            Text("加入局域网房间", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFF2D241E))
+                            Text(if (battle.localAddress.isBlank()) "请先确保两台手机连接同一个 Wi‑Fi。" else "本机当前 IP：${battle.localAddress}", color = Color(0xFF8F8378))
+                            OutlinedTextField(
+                                value = battle.joinCodeInput,
+                                onValueChange = onJoinCodeChange,
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("输入房主 IP:端口，例如 192.168.1.5:40740") },
+                                shape = RoundedCornerShape(20.dp)
+                            )
+                            Button(
+                                onClick = onJoinLan,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8F86FF)),
+                                shape = RoundedCornerShape(18.dp)
+                            ) { Text("加入对战") }
+                        }
+                    }
                 }
             } else {
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        TinyStatChip(if (battle.mode == BattleMode.Ai) "人机对战" else "局域网对战", Color(0xFF8F86FF))
+                        TinyStatChip(
+                            when (battle.mode) {
+                                BattleMode.Ai -> "拼写 AI 挑战"
+                                BattleMode.MeaningQuiz -> "释义速选"
+                                BattleMode.Lan -> "局域网对战"
+                            },
+                            Color(0xFF8F86FF)
+                        )
                         TinyStatChip("第 ${battle.roundIndex + 1}/${battle.totalRounds} 题", Color(0xFFFFA37C))
                     }
                 }
@@ -210,54 +255,78 @@ fun OnlineBattleScreen(
                             }
                         }
                     }
-                    item {
-                        Button(
-                            onClick = {
-                                val started = speechPlayer.speak(battle.currentWord.word)
-                                playbackStatus = if (started) null else "当前设备未提供可用的英文语音引擎"
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8F86FF)),
-                            shape = RoundedCornerShape(18.dp)
-                        ) {
-                            Icon(Icons.Default.GraphicEq, contentDescription = null)
-                            Spacer(Modifier.size(8.dp))
-                            Text("播放发音")
-                        }
-                    }
-                    playbackStatus?.let { status ->
-                        item { Text(status, color = Color(0xFFFF8D72)) }
-                    }
-                    item {
-                        OutlinedTextField(
-                            value = battle.answerInput,
-                            onValueChange = onInputChange,
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = battle.mode == BattleMode.Ai || !battle.submitted,
-                            label = {
-                                Text(
-                                    when {
-                                        battle.mode == BattleMode.Ai && battle.phase == BattlePhase.RoundReview -> "点击下一题继续"
-                                        battle.submitted -> "已提交，等待对手"
-                                        else -> "输入你的拼写"
+                    if (battle.mode == BattleMode.MeaningQuiz) {
+                        item {
+                            FloatingCard {
+                                Text("四选一", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFF2D241E))
+                                battle.currentChoices.forEachIndexed { index, choice ->
+                                    val selected = battle.answerInput == choice
+                                    Button(
+                                        onClick = { if (!(battle.phase == BattlePhase.RoundReview)) onInputChange(choice) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        enabled = battle.phase != BattlePhase.RoundReview,
+                                        shape = RoundedCornerShape(18.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = if (selected) Color(0xFF7EC8A5) else Color(0xFFF3ECDD),
+                                            contentColor = if (selected) Color.White else Color(0xFF2D241E)
+                                        )
+                                    ) {
+                                        Text("${'A' + index}. $choice")
                                     }
-                                )
-                            },
-                            shape = RoundedCornerShape(20.dp)
-                        )
+                                }
+                            }
+                        }
+                    } else {
+                        item {
+                            Button(
+                                onClick = {
+                                    val started = speechPlayer.speak(battle.currentWord.word)
+                                    playbackStatus = if (started) null else "当前设备未提供可用的英文语音引擎"
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8F86FF)),
+                                shape = RoundedCornerShape(18.dp)
+                            ) {
+                                Icon(Icons.Default.GraphicEq, contentDescription = null)
+                                Spacer(Modifier.size(8.dp))
+                                Text("播放发音")
+                            }
+                        }
+                        playbackStatus?.let { status ->
+                            item { Text(status, color = Color(0xFFFF8D72)) }
+                        }
+                        item {
+                            OutlinedTextField(
+                                value = battle.answerInput,
+                                onValueChange = onInputChange,
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = battle.mode == BattleMode.Ai || !battle.submitted,
+                                label = {
+                                    Text(
+                                        when {
+                                            battle.mode == BattleMode.Ai && battle.phase == BattlePhase.RoundReview -> "点击下一题继续"
+                                            battle.submitted -> "已提交，等待对手"
+                                            else -> "输入你的拼写"
+                                        }
+                                    )
+                                },
+                                shape = RoundedCornerShape(20.dp)
+                            )
+                        }
                     }
                     item {
                         Button(
                             onClick = onSubmitAnswer,
                             modifier = Modifier.fillMaxWidth(),
-                            enabled = battle.mode == BattleMode.Ai || !battle.submitted,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8D72)),
+                            enabled = if (battle.mode == BattleMode.MeaningQuiz) battle.answerInput.isNotBlank() || battle.phase == BattlePhase.RoundReview else battle.mode == BattleMode.Ai || !battle.submitted,
+                            colors = ButtonDefaults.buttonColors(containerColor = if (battle.mode == BattleMode.MeaningQuiz) Color(0xFF7EC8A5) else Color(0xFFFF8D72)),
                             shape = RoundedCornerShape(18.dp)
                         ) {
                             Text(
                                 when {
-                                    battle.mode == BattleMode.Ai && battle.phase == BattlePhase.RoundReview -> "下一题"
+                                    (battle.mode == BattleMode.Ai || battle.mode == BattleMode.MeaningQuiz) && battle.phase == BattlePhase.RoundReview -> "下一题"
                                     battle.submitted -> "已提交"
+                                    battle.mode == BattleMode.MeaningQuiz -> "确认选择"
                                     else -> "提交本题"
                                 }
                             )
@@ -269,7 +338,14 @@ fun OnlineBattleScreen(
                         FloatingCard {
                             Text("本局结束", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Color(0xFF2D241E))
                             Text(battle.winnerLabel.ifBlank { "本局已结束" }, color = Color(0xFF8F86FF), fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                            Text(if (battle.mode == BattleMode.Ai) "可以再开一局继续挑战 AI。" else "可以退出后重新建房，再来一局。", color = Color(0xFF8F8378))
+                            Text(
+                                when (battle.mode) {
+                                    BattleMode.Ai -> "可以再开一局继续挑战拼写 AI。"
+                                    BattleMode.MeaningQuiz -> "可以再来一轮释义速选，继续和 AI 比速度。"
+                                    BattleMode.Lan -> "可以退出后重新建房，再来一局。"
+                                },
+                                color = Color(0xFF8F8378)
+                            )
                         }
                     }
                 }
@@ -561,6 +637,10 @@ private fun recognizeEssayText(
                 }
         }
 }
+
+
+
+
 
 
 

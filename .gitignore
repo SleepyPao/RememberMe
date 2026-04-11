@@ -30,3 +30,7 @@ tmp/
 output/
 app/google-services.json
 
+
+# Editor caches
+.history/
+

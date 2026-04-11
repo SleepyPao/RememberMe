@@ -48,6 +48,10 @@ class AppViewModel(
         battleRepository.startAiBattle(authState.value.currentUser.ifBlank { "我" }, library.value.words)
     }
 
+    fun startMeaningQuizBattle() {
+        battleRepository.startMeaningQuizBattle(authState.value.currentUser.ifBlank { "我" }, library.value.words)
+    }
+
     fun updateBattleJoinCode(code: String) {
         battleRepository.updateJoinCode(code)
     }
@@ -273,5 +277,6 @@ class AppViewModel(
         }
     }
 }
+
 
 
