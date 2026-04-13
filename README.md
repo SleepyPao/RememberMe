@@ -2,7 +2,7 @@
 
 词光是一款面向英语词汇学习的 Android 应用，核心目标是帮助用户完成单词背诵、拼写训练、发音检查、错词复习与写作检测。
 
-本项目使用 Kotlin + Jetpack Compose 开发，界面采用奶油白卡片化风格，适合作为课程项目演示与提交。
+本项目使用 Kotlin + Jetpack Compose 开发，界面采用奶油白卡片化风格。
 
 ## Core Features
 
@@ -130,7 +130,7 @@ Note:
 
 ## Source Code Download
 
-Teachers can obtain the source code by either:
+Source code can be obtained by either:
 
 1. Downloading the ZIP directly from GitHub
 2. Cloning the repository:
@@ -138,3 +138,5 @@ Teachers can obtain the source code by either:
 ```bash
 git clone https://github.com/SleepyPao/RememberMe.git
 ```
+
+
